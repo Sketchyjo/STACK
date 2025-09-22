@@ -239,3 +239,4 @@ pnpm docker:down      # Stop Docker services
   <p>Built with ❤️ using Turborepo, Expo, Fastify, and Docker</p>
   <p>Made for modern, scalable applications</p>
 </div># STACK-APP
+# STACK
