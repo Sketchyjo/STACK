@@ -1,135 +1,241 @@
-# Turborepo starter
+# STACK - Decentralized Investment Platform
 
-This Turborepo starter is maintained by the Turborepo core team.
+<div align="center">
+  <h3>🚀 Professional Turborepo Monorepo for STACK Platform</h3>
+  <p>A scalable, production-ready monorepo setup with Expo React Native, Fastify API, and shared packages</p>
+</div>
 
-## Using this example
+---
 
-Run the following command:
+## 📋 Table of Contents
 
-```sh
-npx create-turbo@latest
-```
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Deployment](#deployment)
+- [Available Scripts](#available-scripts)
+- [Contributing](#contributing)
 
-## What's inside?
+## 🎯 Overview
 
-This Turborepo includes the following packages/apps:
+STACK is a decentralized investment platform built with modern technologies and best practices. This monorepo contains:
 
-### Apps and Packages
+- **Mobile App**: Expo React Native application for iOS and Android
+- **API Service**: Fastify-based backend with PostgreSQL and Redis
+- **Shared Packages**: Reusable components, types, and configurations
+- **Docker Setup**: Containerized development and production environments
+- **CI/CD Ready**: Configured for modern deployment workflows
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## 🏗️ Architecture
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+STACK Monorepo
+├── Apps
+│   ├── 📱 Mobile (Expo React Native)
+│   ├── 🌐 API (Fastify + Prisma)
+│   └── 🔮 Web (Future: Next.js)
+├── Packages
+│   ├── 🎨 UI Library (Shared Components)
+│   ├── 📝 Shared Types (TypeScript)
+│   ├── 🗄️  Database (Prisma)
+│   └── ⚙️  Config (ESLint, TypeScript)
+└── Infrastructure
+    ├── 🐳 Docker
+    ├── 🔄 Nginx
+    └── 📊 Monitoring
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## 🚀 Quick Start
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+### Prerequisites
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+- **Node.js** >= 18.0.0
+- **pnpm** >= 8.0.0
+- **Docker** & **Docker Compose**
+- **Expo CLI** (for mobile development)
 
-### Develop
+### 1. Clone and Setup
 
-To develop all apps and packages, run the following command:
+```bash
+git clone <your-repo-url>
+cd stack-monorepo
 
-```
-cd my-turborepo
+# Copy environment variables
+cp .env.example .env
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+# Run the development setup script
+./scripts/dev.sh
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### 2. Manual Setup (Alternative)
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+```bash
+# Install dependencies
+pnpm install
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+# Start Docker services
+docker-compose up -d postgres redis
 
-### Remote Caching
+# Generate database client
+pnpm --filter @stack/database db:generate
+pnpm --filter @stack/database db:push
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+# Build packages
+pnpm build
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+# Start development
+pnpm dev
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## 📁 Project Structure
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+stack-monorepo/
+├── apps/
+│   ├── mobile/                 # Expo React Native app
+│   │   ├── src/
+│   │   ├── app.json
+│   │   └── package.json
+│   ├── api/                    # Fastify API service
+│   │   ├── src/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   └── web/                    # Future web app
+├── packages/
+│   ├── ui/                     # Shared UI components
+│   ├── shared-types/           # TypeScript types
+│   ├── database/               # Prisma database package
+│   ├── config/                 # Shared configurations
+│   ├── eslint-config/          # ESLint configurations
+│   └── typescript-config/      # TypeScript configurations
+├── scripts/
+│   └── dev.sh                  # Development setup script
+├── docker-compose.yml          # Development Docker setup
+├── docker-compose.prod.yml     # Production Docker setup
+├── nginx.conf                  # Nginx configuration
+├── turbo.json                  # Turborepo configuration
+└── package.json               # Root package.json
 ```
 
-## Useful Links
+## 🛠 Development
 
-Learn more about the power of Turborepo:
+### Starting Development Environment
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+```bash
+# Start all services
+pnpm dev
+
+# Start individual services
+pnpm --filter @stack/api dev        # API only
+pnpm --filter @stack/mobile dev     # Mobile only
+pnpm --filter @stack/ui dev          # UI package only
+```
+
+### Database Operations
+
+```bash
+# Generate Prisma client
+pnpm --filter @stack/database db:generate
+
+# Push schema to database
+pnpm --filter @stack/database db:push
+
+# Run migrations
+pnpm --filter @stack/database db:migrate
+
+# Open Prisma Studio
+pnpm --filter @stack/database db:studio
+
+# Seed database
+pnpm --filter @stack/database db:seed
+```
+
+### Mobile Development
+
+```bash
+# Start Expo development server
+pnpm --filter @stack/mobile dev
+
+# Run on iOS simulator
+pnpm --filter @stack/mobile ios
+
+# Run on Android emulator
+pnpm --filter @stack/mobile android
+
+# Build development build
+pnpm --filter @stack/mobile build:dev
+```
+
+## 🐳 Deployment
+
+### Development Deployment
+
+```bash
+# Start all services with Docker
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Production Deployment
+
+```bash
+# Build and start production services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Scale API service
+docker-compose -f docker-compose.prod.yml up -d --scale api=3
+```
+
+## 📜 Available Scripts
+
+### Root Level Scripts
+
+```bash
+pnpm dev              # Start development mode
+pnpm build            # Build all packages
+pnpm lint             # Lint all packages
+pnpm format           # Format code
+pnpm test             # Run tests
+pnpm clean            # Clean all build outputs
+pnpm setup            # Install and build everything
+```
+
+### Docker Scripts
+
+```bash
+pnpm docker:build     # Build Docker images
+pnpm docker:up        # Start Docker services
+pnpm docker:down      # Stop Docker services
+```
+
+## 🏗️ Development Workflow
+
+1. **Setup**: Run `./scripts/dev.sh` or follow manual setup
+2. **Development**: Use `pnpm dev` to start all services
+3. **Testing**: Run `pnpm test` for all tests
+4. **Linting**: Run `pnpm lint` and `pnpm format`
+5. **Building**: Run `pnpm build` before deployment
+6. **Deployment**: Use Docker Compose for containerized deployment
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and ensure tests pass
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+---
+
+<div align="center">
+  <p>Built with ❤️ using Turborepo, Expo, Fastify, and Docker</p>
+  <p>Made for modern, scalable applications</p>
+</div># STACK-APP
