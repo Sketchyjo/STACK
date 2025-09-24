@@ -1,0 +1,41 @@
+{
+  "name": "@stack/database",
+  "version": "1.0.0",
+  "description": "STACK Database package with Prisma",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "lint": "eslint \"**/*.{js,ts}\" && prettier -c \"**/*.{js,ts,json}\"",
+    "format": "eslint \"**/*.{js,ts}\" --fix && prettier \"**/*.{js,ts,json}\" --write",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.0",
+    "@stack/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@stack/eslint-config": "workspace:*",
+    "@stack/typescript-config": "workspace:*",
+    "@types/node": "^20.11.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.0",
+    "prisma": "^6.3.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

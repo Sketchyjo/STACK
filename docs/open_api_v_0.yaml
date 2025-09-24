@@ -1,0 +1,779 @@
+openapi: 3.0.3
+info:
+  title: Web3 USDC Funding → DriveWealth Stocks/ETFs API
+  version: 0.1.0
+  description: |
+    Backend API for bankless funding with USDC (Circle wallets) and brokered investing via DriveWealth.
+    MVP covers: Wallet deposits, Treasury redemption & sweep, Brokerage trading, Curated & DIY Baskets,
+    Time-Lock program (10% early exit), AI CFO explainers, Social-lite.
+servers:
+  - url: https://api.staging.example.com/v1
+    description: Staging
+  - url: https://api.example.com/v1
+    description: Production
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth & Onboarding
+  - name: Wallets
+  - name: Treasury
+  - name: Brokerage
+  - name: Baskets
+  - name: Locks
+  - name: Models
+  - name: AI CFO
+  - name: Social
+  - name: Documents
+
+paths:
+  /auth/start:
+    post:
+      tags: [Auth & Onboarding]
+      summary: Begin auth (email/OTP or OAuth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                provider:
+                  type: string
+                  enum: [email_otp, google, apple]
+              required: [email]
+      responses:
+        '200': { description: OTP sent or OAuth URL returned }
+
+  /kyc/start:
+    post:
+      tags: [Auth & Onboarding]
+      summary: Create DriveWealth user & start KYC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KycProfileInput'
+      responses:
+        '201':
+          description: KYC initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KycProfile'
+
+  /disclosures/accept:
+    post:
+      tags: [Auth & Onboarding]
+      summary: Accept a disclosure document (e.g., W-9/W-8BEN, customer agreement)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisclosureAcceptanceInput'
+      responses:
+        '204': { description: Accepted }
+
+  /accounts:
+    post:
+      tags: [Auth & Onboarding]
+      summary: Create DriveWealth brokerage account (post-KYC Approved)
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerAccount'
+
+  /wallets/create:
+    post:
+      tags: [Wallets]
+      summary: Provision Circle wallet(s) for a user
+      responses:
+        '201':
+          description: Wallet(s) created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletSet'
+
+  /wallets/deposit-address:
+    post:
+      tags: [Wallets]
+      summary: Get a deposit address/QR for a supported chain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chain:
+                  type: string
+                  enum: [APTOS, BASE, POLYGON]
+              required: [chain]
+      responses:
+        '200':
+          description: Address allocated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositAddress'
+
+  /wallets/deposits:
+    get:
+      tags: [Wallets]
+      summary: List deposits with status
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, confirmed, unsupported]
+      responses:
+        '200':
+          description: Deposits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Deposit'
+
+  /treasury/redeem:
+    post:
+      tags: [Treasury]
+      summary: Redeem USDC to USD for a confirmed deposit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                depositId: { type: string }
+              required: [depositId]
+      responses:
+        '202':
+          description: Redemption started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreasuryConversion'
+
+  /treasury/transfer-broker:
+    post:
+      tags: [Treasury]
+      summary: Sweep USD to DriveWealth omnibus with attribution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+                amountUsd: { type: number, format: float }
+              required: [accountId, amountUsd]
+      responses:
+        '202':
+          description: Transfer initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerTransfer'
+
+  /treasury/activities:
+    get:
+      tags: [Treasury]
+      summary: List treasury conversions and broker transfers
+      responses:
+        '200':
+          description: Activities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreasuryActivityList'
+
+  /baskets:
+    post:
+      tags: [Baskets]
+      summary: Create DIY basket (tickers + allocation rule)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiyBasketCreateInput'
+      responses:
+        '201':
+          description: Basket created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Basket'
+
+  /baskets/{basketId}:
+    get:
+      tags: [Baskets]
+      summary: Get basket
+      parameters:
+        - in: path
+          name: basketId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Basket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Basket'
+
+  /baskets/{basketId}/invest:
+    post:
+      tags: [Baskets]
+      summary: Invest $ amount into a basket (curated or DIY)
+      parameters:
+        - in: path
+          name: basketId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasketInvestInput'
+      responses:
+        '202':
+          description: Basket investment submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasketInvestResult'
+
+  /baskets/{basketId}/version:
+    post:
+      tags: [Baskets, Models]
+      summary: Publish a new version of a curated basket (experts only)
+      parameters:
+        - in: path
+          name: basketId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasketVersionInput'
+      responses:
+        '201':
+          description: New basket version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasketVersion'
+
+  /baskets/{basketId}/rebalance/confirm:
+    post:
+      tags: [Baskets]
+      summary: User consents to apply a curated basket rebalance
+      parameters:
+        - in: path
+          name: basketId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                versionId: { type: string }
+              required: [versionId]
+      responses:
+        '202': { description: Rebalance accepted and scheduled }
+
+  /locks:
+    post:
+      tags: [Locks]
+      summary: Create a lock agreement for a basket investment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LockCreateInput'
+      responses:
+        '201':
+          description: Lock created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lock'
+
+  /locks/{lockId}:
+    get:
+      tags: [Locks]
+      summary: Get lock status/details
+      parameters:
+        - in: path
+          name: lockId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lock'
+
+  /locks/{lockId}/early-unlock/quote:
+    post:
+      tags: [Locks]
+      summary: Quote early unlock fee (10% of liquidation proceeds)
+      parameters:
+        - in: path
+          name: lockId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Fee quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarlyUnlockQuote'
+
+  /locks/{lockId}/early-unlock/confirm:
+    post:
+      tags: [Locks]
+      summary: Confirm early unlock; execute liquidations and route fees
+      parameters:
+        - in: path
+          name: lockId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quoteId: { type: string }
+              required: [quoteId]
+      responses:
+        '202':
+          description: Early unlock initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarlyUnlockResult'
+
+  /orders:
+    post:
+      tags: [Brokerage]
+      summary: Place a direct order (market/limit; dollars or shares)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderInput'
+      responses:
+        '202':
+          description: Order accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{orderId}:
+    get:
+      tags: [Brokerage]
+      summary: Get order status
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /positions:
+    get:
+      tags: [Brokerage]
+      summary: List positions
+      responses:
+        '200':
+          description: Positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Position'
+
+  /balances:
+    get:
+      tags: [Brokerage]
+      summary: Get cash & buying power balances
+      responses:
+        '200':
+          description: Balances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Balances'
+
+  /documents/{type}:
+    get:
+      tags: [Documents]
+      summary: Get documents (trade-confirms, statements, tax)
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [trade-confirms, statements, tax]
+      responses:
+        '200': { description: Document links returned }
+
+  /cfo/query:
+    post:
+      tags: [AI CFO]
+      summary: Ask CFO persona for an explainer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                persona:
+                  type: string
+                  enum: [conservative, educator, growth]
+                topic:
+                  type: string
+                  description: e.g., basketId or ETF symbol
+                question:
+                  type: string
+      responses:
+        '200':
+          description: Explainer response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CfoResponse'
+
+  /social/follow:
+    post:
+      tags: [Social]
+      summary: Follow a profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: { type: string }
+              required: [userId]
+      responses:
+        '204': { description: Followed }
+
+  /feed:
+    get:
+      tags: [Social]
+      summary: Personalized feed
+      responses:
+        '200': { description: Feed items returned }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    KycProfileInput:
+      type: object
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        dob: { type: string, format: date }
+        country: { type: string }
+        taxResidency: { type: string }
+        tin: { type: string, nullable: true }
+        address: { $ref: '#/components/schemas/Address' }
+      required: [firstName, lastName, dob, country, taxResidency, address]
+
+    KycProfile:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [pending, review, approved, rejected] }
+        createdAt: { type: string, format: date-time }
+
+    DisclosureAcceptanceInput:
+      type: object
+      properties:
+        type: { type: string, enum: [w9, w8ben, customer_agreement, lock_terms, rebalance_consent] }
+        version: { type: string }
+      required: [type, version]
+
+    BrokerAccount:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [approved, pending, restricted] }
+        createdAt: { type: string, format: date-time }
+
+    WalletSet:
+      type: object
+      properties:
+        userId: { type: string }
+        evmAddress: { type: string }
+        aptosAddress: { type: string }
+
+    DepositAddress:
+      type: object
+      properties:
+        chain: { type: string }
+        address: { type: string }
+        qr: { type: string, description: 'data URI' }
+
+    Deposit:
+      type: object
+      properties:
+        id: { type: string }
+        chain: { type: string }
+        txHash: { type: string }
+        amountUSDC: { type: number, format: float }
+        status: { type: string, enum: [pending, confirmed, unsupported] }
+        confirmedAt: { type: string, format: date-time, nullable: true }
+
+    TreasuryConversion:
+      type: object
+      properties:
+        id: { type: string }
+        depositId: { type: string }
+        amountUSDC: { type: number, format: float }
+        amountUSD: { type: number, format: float }
+        status: { type: string, enum: [initiated, settled, failed] }
+        initiatedAt: { type: string, format: date-time }
+        settledAt: { type: string, format: date-time, nullable: true }
+
+    BrokerTransfer:
+      type: object
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        amountUSD: { type: number, format: float }
+        status: { type: string, enum: [initiated, posted, failed] }
+        initiatedAt: { type: string, format: date-time }
+        postedAt: { type: string, format: date-time, nullable: true }
+        reference: { type: string }
+
+    TreasuryActivityList:
+      type: object
+      properties:
+        conversions:
+          type: array
+          items: { $ref: '#/components/schemas/TreasuryConversion' }
+        transfers:
+          type: array
+          items: { $ref: '#/components/schemas/BrokerTransfer' }
+
+    DiyBasketCreateInput:
+      type: object
+      properties:
+        name: { type: string }
+        tickers:
+          type: array
+          minItems: 2
+          maxItems: 25
+          items: { type: string, example: 'AAPL' }
+        allocationRule:
+          type: string
+          enum: [equal_weight, custom_percent]
+        customWeights:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol: { type: string }
+              percent: { type: number, format: float }
+      required: [name, tickers, allocationRule]
+
+    Basket:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [CURATED, DIY] }
+        name: { type: string }
+        ownerId: { type: string }
+        weights:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol: { type: string }
+              targetPercent: { type: number, format: float }
+
+    BasketInvestInput:
+      type: object
+      properties:
+        amountUSD: { type: number, format: float, minimum: 1 }
+        followVersions: { type: boolean, default: false }
+        lock:
+          type: object
+          properties:
+            durationDays: { type: integer, enum: [30, 90, 180] }
+      required: [amountUSD]
+
+    BasketInvestResult:
+      type: object
+      properties:
+        basketId: { type: string }
+        orderIds:
+          type: array
+          items: { type: string }
+        estimatedResidualCash: { type: number, format: float }
+
+    BasketVersionInput:
+      type: object
+      properties:
+        weights:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              symbol: { type: string }
+              targetPercent: { type: number, format: float }
+        notes: { type: string }
+      required: [weights]
+
+    BasketVersion:
+      type: object
+      properties:
+        id: { type: string }
+        basketId: { type: string }
+        effectiveAt: { type: string, format: date-time }
+        weights:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol: { type: string }
+              targetPercent: { type: number, format: float }
+
+    LockCreateInput:
+      type: object
+      properties:
+        basketId: { type: string }
+        amountUSD: { type: number, format: float }
+        durationDays: { type: integer, enum: [30, 90, 180] }
+      required: [basketId, amountUSD, durationDays]
+
+    Lock:
+      type: object
+      properties:
+        id: { type: string }
+        basketId: { type: string }
+        startTs: { type: string, format: date-time }
+        endTs: { type: string, format: date-time }
+        feePercent: { type: number, format: float, default: 10 }
+        status: { type: string, enum: [active, completed] }
+
+    EarlyUnlockQuote:
+      type: object
+      properties:
+        quoteId: { type: string }
+        lockId: { type: string }
+        estimatedProceedsUSD: { type: number, format: float }
+        feeUSD: { type: number, format: float, description: '10% of estimatedProceedsUSD' }
+        userReceivesUSD: { type: number, format: float }
+
+    EarlyUnlockResult:
+      type: object
+      properties:
+        lockId: { type: string }
+        liquidationOrderIds:
+          type: array
+          items: { type: string }
+        feeUSD: { type: number, format: float }
+        userReceivesUSD: { type: number, format: float }
+        status: { type: string, enum: [initiated, settled] }
+
+    OrderInput:
+      type: object
+      properties:
+        symbol: { type: string }
+        side: { type: string, enum: [buy, sell] }
+        quantityType: { type: string, enum: [dollars, shares] }
+        quantity: { type: number, format: float }
+        tif: { type: string, enum: [day, gtc] }
+        limitPrice: { type: number, format: float, nullable: true }
+      required: [symbol, side, quantityType, quantity]
+
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [accepted, partially_filled, filled, cancelled, rejected] }
+        symbol: { type: string }
+        side: { type: string }
+        quantityType: { type: string }
+        quantity: { type: number, format: float }
+        filledQuantity: { type: number, format: float }
+        avgFillPrice: { type: number, format: float }
+
+    Position:
+      type: object
+      properties:
+        symbol: { type: string }
+        qty: { type: number, format: float }
+        avgPrice: { type: number, format: float }
+        marketValue: { type: number, format: float }
+
+    Balances:
+      type: object
+      properties:
+        cashUSD: { type: number, format: float }
+        buyingPowerUSD: { type: number, format: float }
+
+    CfoResponse:
+      type: object
+      properties:
+        persona: { type: string }
+        tldr: { type: string }
+        uri: { type: string, description: '0G storage URI to full explainer' }
+
+    Address:
+      type: object
+      properties:
+        line1: { type: string }
+        line2: { type: string, nullable: true }
+        city: { type: string }
+        state: { type: string }
+        postalCode: { type: string }
+        country: { type: string }

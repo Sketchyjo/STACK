@@ -1,7 +1,7 @@
 {
-  "name": "@repo/typescript-config",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@stack/typescript-config",
+  "version": "1.0.0",
+  "description": "TypeScript configuration for STACK monorepo",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
