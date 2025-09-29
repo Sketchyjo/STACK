@@ -1,9 +1,12 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { Slot } from 'expo-router'
+import { Stack } from 'expo-router';
+import React from 'react';
 
-export default function _layout() {
+export default function AuthLayout() {
   return (
-   <Slot />
-  )
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="signin" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="verify-email" />
+    </Stack>
+  );
 }

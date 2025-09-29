@@ -1,29 +1,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* SF Pro Rounded Font Defaults */
-@layer base {
-  * {
-    font-family: 'SF-Pro-Rounded-Regular';
-  }
-  
-  /* Apply semantic fonts to common elements */
-  h1, .text-h1 {
-    font-family: 'SF-Pro-Rounded-Bold';
-  }
-  
-  h2, .text-h2,
-  h3, .text-h3 {
-    font-family: 'SF-Pro-Rounded-Semibold';
-  }
-  
-  body, p, .text-body {
-    font-family: 'SF-Pro-Rounded-Regular';
-  }
-  
-  label, .text-label,
-  caption, .text-caption {
-    font-family: 'SF-Pro-Rounded-Medium';
-  }
-}

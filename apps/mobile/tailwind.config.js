@@ -1,13 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}",
-    '../../packages/ui-library/src/**/*.{js,ts,tsx}',
-],
-  presets: [require("nativewind/preset")],
+    "./app/**/*.{js,jsx,ts,tsx}", 
+    "./components/**/*.{js,jsx,ts,tsx}",
+  ],
+  presets: [require('nativewind/preset')],
   theme: {
     extend: {
-      fontFamily: {
+    fontFamily: {
         // SF Pro Rounded font family with different weights
         'sf-pro-rounded': ['SF-Pro-Rounded-Regular'],
         'sf-pro-rounded-thin': ['SF-Pro-Rounded-Thin'],
@@ -18,14 +18,18 @@ module.exports = {
         'sf-pro-rounded-bold': ['SF-Pro-Rounded-Bold'],
         'sf-pro-rounded-heavy': ['SF-Pro-Rounded-Heavy'],
         'sf-pro-rounded-black': ['SF-Pro-Rounded-Black'],
+        // Outward font family
+        'outward-block': ['Outward-Block'],
+        'outward-borders': ['Outward-Borders'],
+        'outward-round': ['Outward-Round'],
         // Semantic font aliases
         'display': ['SF-Pro-Rounded-Bold'],
         'heading': ['SF-Pro-Rounded-Semibold'], 
         'body': ['SF-Pro-Rounded-Regular'],
         'caption': ['SF-Pro-Rounded-Medium'],
+        'accent': ['Outward-Block'], // Adding Outward as accent font
       },
     },
   },
   plugins: [],
-}
-
+};

@@ -1,57 +1,51 @@
 {
   "expo": {
-    "name": "Stack",
-    "slug": "mobile",
-    "scheme": "stack",
+    "name": "Stacks",
+    "slug": "stacks",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": false,
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "orientation": "portrait",
+    "icon": "./assets/app-icon/ios-light.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/app-icon/splash-icon-light.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.josephweb3.stack",
+      "bundleIdentifier": "com.stacksmoney.stacks",
+      "icon": {
+        "light": "./assets/app-icon/ios-light.png",
+        "dark": "./assets/app-icon/ios-dark.png",
+        "tinted": "./assets/app-icon/ios-tinted.png"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/app-icon/splash-icon-light.png",
+        "backgroundColor": "#000"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.josephweb3.stack"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-font"
-    ],
-    "fonts": {
-      "SF-Pro-Rounded-Thin": "./assets/fonts/SF-Pro-Rounded-Thin.otf",
-      "SF-Pro-Rounded-Ultralight": "./assets/fonts/SF-Pro-Rounded-Ultralight.otf",
-      "SF-Pro-Rounded-Light": "./assets/fonts/SF-Pro-Rounded-Light.otf",
-      "SF-Pro-Rounded-Regular": "./assets/fonts/SF-Pro-Rounded-Regular.otf",
-      "SF-Pro-Rounded-Medium": "./assets/fonts/SF-Pro-Rounded-Medium.otf",
-      "SF-Pro-Rounded-Semibold": "./assets/fonts/SF-Pro-Rounded-Semibold.otf",
-      "SF-Pro-Rounded-Bold": "./assets/fonts/SF-Pro-Rounded-Bold.otf",
-      "SF-Pro-Rounded-Heavy": "./assets/fonts/SF-Pro-Rounded-Heavy.otf",
-      "SF-Pro-Rounded-Black": "./assets/fonts/SF-Pro-Rounded-Black.otf"
+      "package": "com.stacksmoney.stacks"
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4338a5ba-c9df-49e8-b9c3-c6db820323e2"
+        "projectId": "b0dd99fa-307f-4fb4-8a92-94cccd766945"
       }
     }
   }

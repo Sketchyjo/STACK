@@ -1,6 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// --- CONFIGURATION ---
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,106 +8,482 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- CORE USER MODELS ---
+
 model User {
   id              String    @id @default(cuid())
-  email           String    @unique
-  username        String    @unique
-  firstName       String
-  lastName        String
-  avatar          String?
-  isEmailVerified Boolean   @default(false)
+  email           String?   @unique
+  walletAddress   String?   @unique // Made optional since we'll create wallets via Turnkey
+  displayName     String
+  avatarUrl       String?
+  bio             String?
+  isCurator       Boolean   @default(false)
+  
+  // Email verification fields
+  emailVerified   Boolean   @default(false)
+  emailVerificationToken String? @unique
+  emailVerificationExpires DateTime?
+  
+  // Password for email/password authentication
+  passwordHash    String?
+  
+  // Phone number for verification
+  phoneNumber     String?
+  phoneVerified   Boolean   @default(false)
+  
+  // Nationality for compliance
+  nationality     String?
+  
+  // KYC status for wallet provisioning
+  kycStatus       KYCStatus @default(PENDING)
+  kycCompletedAt  DateTime?
+  
+  // Referral system
+  referralCode    String?   @unique
+  referredBy      String?
+  
+  // Onboarding and starter investment
+  hasStarterInvestment Boolean @default(false)
+  starterInvestmentClaimedAt DateTime?
+  
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
-  portfolios    Portfolio[]
-  investments   Investment[]
-  transactions  Transaction[]
+  // Core relationships
+  portfolio       Portfolio?
+  virtualCard     VirtualCard?
+  loans           Loan[]
+  createdBaskets  Basket[]      @relation("CuratedBy")
+  transactions    Transaction[]
+  wallets         Wallet[]      // New wallet relationship
+  auditLogs       AuditLog[]    // New audit log relationship
+  
+  // Gamification relationships
+  userQuests      UserQuest[]
+  battlePassProgress UserBattlePass[]
+  
+  // AI Expert relationships
+  tipInteractions UserTipInteraction[]
+  
+  // Personalization relationships
+  preferences     UserPreference?
+  feedInteractions UserFeedInteraction[]
+  
+  // Automation relationships
+  investmentSchedules InvestmentSchedule[]
+  autoInvestments AutoInvestment[]
+  
+  // Notification relationships
+  notifications   Notification[]
 
   @@map("users")
 }
 
 model Portfolio {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String?
-  totalValue  Decimal  @default(0)
-  currency    Currency @default(USD)
-  isPublic    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  investments Investment[]
+  id          String    @id @default(cuid())
+  totalValue  Decimal   @default(0) @db.Decimal(18, 8)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String    @unique
+  holdings    PortfolioHolding[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("portfolios")
 }
 
-model Investment {
-  id          String           @id @default(cuid())
-  userId      String
-  portfolioId String?
-  amount      Decimal
-  currency    Currency
-  type        InvestmentType
-  status      InvestmentStatus @default(PENDING)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+model PortfolioHolding {
+  id                    String    @id @default(cuid())
+  unitsOwned            Decimal   @db.Decimal(18, 8)
+  totalAmountInvested   Decimal   @db.Decimal(18, 8)
+  currentValue          Decimal   @db.Decimal(18, 8)
+  portfolio             Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  portfolioId           String
+  basket                Basket    @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  basketId              String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  // Relations
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  portfolio Portfolio? @relation(fields: [portfolioId], references: [id], onDelete: SetNull)
+  @@unique([portfolioId, basketId])
+  @@map("portfolio_holdings")
+}
 
-  @@map("investments")
+model Basket {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  iconUrl       String?
+  riskLevel     RiskLevel @default(MEDIUM)
+  assets        Json      // Array of asset compositions with weights
+  isCommunity   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  curator       User?     @relation("CuratedBy", fields: [curatorId], references: [id], onDelete: SetNull)
+  curatorId     String?
+  
+  // Relationships
+  holdings      PortfolioHolding[]
+  schedules     InvestmentSchedule[]
+  autoInvestments AutoInvestment[]
+
+  @@map("baskets")
+}
+
+model VirtualCard {
+  id                   String     @id @default(cuid())
+  spendableBalance     Decimal    @default(0) @db.Decimal(18, 8)
+  cardProcessorToken   String     @unique
+  status               CardStatus @default(ACTIVE)
+  roundUpSettings      Json       // Round-up configuration
+  spendingLimits       Json       // Daily/monthly limits
+  securitySettings     Json       // PIN, biometric settings
+  notificationSettings Json       // Card notification preferences
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String     @unique
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@map("virtual_cards")
 }
 
 model Transaction {
   id          String            @id @default(cuid())
-  userId      String
+  amount      Decimal           @db.Decimal(18, 8)
+  currency    String            @default("USD")
   type        TransactionType
-  amount      Decimal
-  currency    Currency
   status      TransactionStatus @default(PENDING)
-  description String?
-  metadata    Json?
+  description String
+  metadata    Json?             // Additional transaction data
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@index([userId, createdAt])
+  @@index([type, status])
   @@map("transactions")
 }
 
-// Enums
-enum Currency {
-  USD
-  EUR
-  BTC
-  ETH
+model Loan {
+  id                 String      @id @default(cuid())
+  principalAmount    Decimal     @db.Decimal(18, 8)
+  outstandingBalance Decimal     @db.Decimal(18, 8)
+  interestRate       Decimal     @db.Decimal(5, 4) // e.g., 0.0525 for 5.25%
+  status             LoanStatus  @default(ACTIVE)
+  collateral         Json        // Collateral asset details
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+
+  @@index([userId, status])
+  @@map("loans")
 }
 
-enum InvestmentType {
-  EQUITY
-  CRYPTO
-  BOND
-  REAL_ESTATE
+// --- GAMIFICATION MODELS ---
+
+model Quest {
+  id              String      @id @default(cuid())
+  title           String
+  description     String
+  type            QuestType
+  targetValue     Decimal?    @db.Decimal(18, 8)
+  targetCount     Int?
+  rewardType      RewardType
+  rewardValue     Decimal?    @db.Decimal(18, 8)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  userQuests      UserQuest[]
+
+  @@index([isActive, type])
+  @@map("quests")
 }
 
-enum InvestmentStatus {
-  PENDING
+model UserQuest {
+  id              String      @id @default(cuid())
+  progress        Decimal     @default(0) @db.Decimal(18, 8)
+  isCompleted     Boolean     @default(false)
+  completedAt     DateTime?
+  claimedAt       DateTime?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  quest           Quest       @relation(fields: [questId], references: [id], onDelete: Cascade)
+  questId         String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([userId, questId])
+  @@index([userId, isCompleted])
+  @@map("user_quests")
+}
+
+model BattlePass {
+  id              String      @id @default(cuid())
+  season          String      @unique
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean     @default(true)
+  tiers           Json        // Array of tier definitions with XP requirements and rewards
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  userProgress    UserBattlePass[]
+
+  @@index([isActive, startDate, endDate])
+  @@map("battle_passes")
+}
+
+model UserBattlePass {
+  id              String      @id @default(cuid())
+  currentXP       Int         @default(0)
+  currentTier     Int         @default(1)
+  claimedTiers    Json        @default("[]") // Array of claimed tier numbers
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  battlePass      BattlePass  @relation(fields: [battlePassId], references: [id], onDelete: Cascade)
+  battlePassId    String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([userId, battlePassId])
+  @@index([userId, currentXP])
+  @@map("user_battle_passes")
+}
+
+// --- AI EXPERT MODELS ---
+
+model ExpertTip {
+  id              String      @id @default(cuid())
+  title           String
+  content         String
+  category        TipCategory
+  triggerEvent    TriggerEvent
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  userInteractions UserTipInteraction[]
+
+  @@index([isActive, category])
+  @@index([triggerEvent])
+  @@map("expert_tips")
+}
+
+model UserTipInteraction {
+  id              String      @id @default(cuid())
+  wasShown        Boolean     @default(false)
+  wasRead         Boolean     @default(false)
+  wasHelpful      Boolean?
+  shownAt         DateTime?
+  readAt          DateTime?
+  feedbackAt      DateTime?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  tip             ExpertTip   @relation(fields: [tipId], references: [id], onDelete: Cascade)
+  tipId           String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([userId, tipId])
+  @@index([userId, wasShown])
+  @@map("user_tip_interactions")
+}
+
+// --- PERSONALIZATION MODELS ---
+
+model UserPreference {
+  id              String      @id @default(cuid())
+  riskTolerance   RiskLevel   @default(MEDIUM)
+  investmentGoals Json        // Array of goal types
+  interests       Json        // Array of interest categories
+  notificationSettings Json   // Notification preferences
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String      @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("user_preferences")
+}
+
+model FeedItem {
+  id              String      @id @default(cuid())
+  type            FeedItemType
+  title           String
+  description     String?
+  imageUrl        String?
+  targetId        String      // ID of basket, quest, etc.
+  priority        Int         @default(0)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  userInteractions UserFeedInteraction[]
+
+  @@index([isActive, priority])
+  @@index([type, targetId])
+  @@map("feed_items")
+}
+
+model UserFeedInteraction {
+  id              String      @id @default(cuid())
+  wasShown        Boolean     @default(false)
+  wasClicked      Boolean     @default(false)
+  wasInvested     Boolean     @default(false)
+  shownAt         DateTime?
+  clickedAt       DateTime?
+  investedAt      DateTime?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  feedItem        FeedItem    @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+  feedItemId      String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([userId, feedItemId])
+  @@index([userId, wasShown])
+  @@map("user_feed_interactions")
+}
+
+// --- AUTOMATION MODELS ---
+
+model InvestmentSchedule {
+  id              String      @id @default(cuid())
+  amount          Decimal     @db.Decimal(18, 8)
+  frequency       ScheduleFrequency
+  dayOfWeek       Int?        // 0-6 for weekly schedules
+  dayOfMonth      Int?        // 1-31 for monthly schedules
+  isActive        Boolean     @default(true)
+  nextRunDate     DateTime
+  lastRunDate     DateTime?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  basket          Basket      @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  basketId        String
+  autoInvestments AutoInvestment[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([isActive, nextRunDate])
+  @@index([userId, isActive])
+  @@map("investment_schedules")
+}
+
+model AutoInvestment {
+  id              String      @id @default(cuid())
+  amount          Decimal     @db.Decimal(18, 8)
+  type            AutoInvestmentType
+  status          AutoInvestmentStatus @default(PENDING)
+  scheduledFor    DateTime
+  executedAt      DateTime?
+  failureReason   String?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  basket          Basket      @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  basketId        String
+  schedule        InvestmentSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  scheduleId      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([userId, status])
+  @@map("auto_investments")
+}
+
+// --- NOTIFICATION MODELS ---
+
+model Notification {
+  id              String      @id @default(cuid())
+  title           String
+  message         String
+  type            NotificationType
+  data            Json?       // Additional data for the notification
+  isRead          Boolean     @default(false)
+  readAt          DateTime?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId, isRead])
+  @@index([type, createdAt])
+  @@map("notifications")
+}
+
+// --- WALLET MANAGEMENT MODELS ---
+
+model Wallet {
+  id                  String      @id @default(cuid())
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  chain               ChainType
+  address             String
+  turnkeyWalletId     String
+  turnkeyAccountId    String
+  addressType         String      // ADDRESS_TYPE_APTOS, ADDRESS_TYPE_SOLANA, ADDRESS_TYPE_ETHEREUM
+  status              WalletStatus @default(ACTIVE)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([userId, chain])
+  @@index([userId, status])
+  @@index([chain, status])
+  @@map("wallets")
+}
+
+model AuditLog {
+  id              String      @id @default(cuid())
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId          String?
+  action          String      // e.g., "WALLET_CREATION", "ACCOUNT_CREATION"
+  entityType      String?     // e.g., "WALLET", "USER", "TRANSACTION"
+  entityId        String?     // ID of the affected entity
+  details         Json?       // Additional context and metadata
+  correlationId   String?     // For tracking related operations
+  status          AuditStatus @default(SUCCESS)
+  errorMessage    String?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, status])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
+
+model FeatureFlag {
+  id              String      @id @default(cuid())
+  key             String      @unique // e.g., "wallet.enableAptos"
+  name            String      // Human readable name
+  description     String?
+  isEnabled       Boolean     @default(false)
+  rolloutPercent  Int         @default(0) // 0-100 for gradual rollouts
+  conditions      Json?       // Additional conditions for flag evaluation
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([key, isEnabled])
+  @@map("feature_flags")
+}
+
+// --- ENUMS ---
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CardStatus {
   ACTIVE
-  COMPLETED
-  CANCELLED
+  INACTIVE
+  FROZEN
 }
 
 enum TransactionType {
-  DEPOSIT
-  WITHDRAWAL
+  CARD_PURCHASE
   INVESTMENT
-  DIVIDEND
+  WITHDRAWAL
+  LOAN_DISBURSEMENT
+  LOAN_REPAYMENT
   FEE
 }
 
@@ -117,5 +491,101 @@ enum TransactionStatus {
   PENDING
   COMPLETED
   FAILED
+  REVERSED
+}
+
+enum LoanStatus {
+  ACTIVE
+  REPAID
+  IN_DEFAULT
+  LIQUIDATED
+}
+
+enum QuestType {
+  INVESTMENT_AMOUNT
+  INVESTMENT_COUNT
+  CARD_USAGE
+  SOCIAL_ACTION
+  STREAK
+}
+
+enum RewardType {
+  XP
+  BONUS_INVESTMENT
+  COSMETIC
+  DISCOUNT
+}
+
+enum TipCategory {
+  INVESTMENT_STRATEGY
+  MARKET_INSIGHT
+  FINANCIAL_EDUCATION
+  PLATFORM_FEATURE
+}
+
+enum TriggerEvent {
+  POST_INVESTMENT
+  MARKET_MOVEMENT
+  QUEST_COMPLETION
+  WEEKLY_SUMMARY
+}
+
+enum FeedItemType {
+  BASKET_RECOMMENDATION
+  QUEST_SUGGESTION
+  CURATOR_HIGHLIGHT
+  MARKET_UPDATE
+}
+
+enum ScheduleFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum AutoInvestmentType {
+  PAYDAY
+  ROUNDUP
+  SCHEDULED
+}
+
+enum AutoInvestmentStatus {
+  PENDING
+  COMPLETED
+  FAILED
   CANCELLED
+}
+
+enum NotificationType {
+  INVESTMENT_SUCCESS
+  QUEST_COMPLETED
+  MARKET_UPDATE
+  SYSTEM_ALERT
+}
+
+enum KYCStatus {
+  PENDING
+  IN_PROGRESS
+  PASSED
+  FAILED
+  EXPIRED
+}
+
+enum ChainType {
+  APTOS
+  SOLANA
+  EVM
+}
+
+enum WalletStatus {
+  ACTIVE
+  INACTIVE
+  FROZEN
+  ERROR
+}
+
+enum AuditStatus {
+  SUCCESS
+  FAILURE
+  PENDING
 }

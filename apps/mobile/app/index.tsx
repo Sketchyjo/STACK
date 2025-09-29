@@ -128,12 +128,12 @@ export default function App() {
     <View
       className="flex-1 items-center"
       style={{ width: width, backgroundColor: item.backgroundColor }}>
-      <View className="w-full flex-1 items-start px-4 pt-32">
-        <Text className={`font-display text-[32px] uppercase leading-none ${item.textColor}`}>
+      <View className="w-full flex-1 items-start px-4 pt-32 ">
+        <Text className={`font-sf-pro-rounded-black text-[38px] tracking-wides w-full uppercase ${item.textColor}`}>
           {item.title}
         </Text>
         <Text
-          className={`mt-4 max-w-xs font-caption text-base ${item.textSmall ?? ''} opacity-80`}>
+          className={`mt-4 max-w-xs font-sf-pro-rounded-light text-base font-bold ${item.textSmall ?? ''} opacity-80`}>
           {item.description}
         </Text>
       </View>
@@ -202,10 +202,10 @@ export default function App() {
       {/* --- "Get Started" Button --- */}
       <View className="absolute bottom-10 w-full items-center px-6">
         <TouchableOpacity
-          className="w-full rounded-xl bg-slate-900 p-[24px]"
-          onPress={() => router.replace('/(tabs)/home')}
+          className="w-full rounded-full bg-slate-900 p-4"
+          onPress={() => router.push('/(tabs)/home')}
         >
-          <Text className="text-center text-lg font-heading text-white">Get Started</Text>
+          <Text className="text-center text-lg font-bold text-white">Get Started</Text>
         </TouchableOpacity>
       </View>
     </View>
